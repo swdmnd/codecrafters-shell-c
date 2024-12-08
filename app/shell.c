@@ -37,7 +37,8 @@ int parse_cmd(char* cmd, FILE* out_stream){
         sprintf(cdpath, "%s", arg);
         int cd_err = chdir(cdpath);
         if(cd_err) {
-            echo("", out_stream);
+            printf("cd: %s: No such file or directory\n", arg);
+            fflush(out_stream);
         }
         return 0;
     } else if (!strcmp(cmd_token, "type")) {
