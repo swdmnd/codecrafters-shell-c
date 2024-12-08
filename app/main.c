@@ -1,8 +1,12 @@
 #include <stdio.h>
 #include <string.h>
-#include "cmd_parser.h"
+#include <stdlib.h>
+#include "shell.h"
+
+char* ENV_PATH = NULL;
 
 int main() {
+  ENV_PATH = getenv("PATH");
   while(1){
     printf("$ ");
     fflush(stdout);
