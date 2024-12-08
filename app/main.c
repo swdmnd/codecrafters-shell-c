@@ -11,7 +11,9 @@ int main() {
     fgets(input, 100, stdin);
     input[strcspn(input, "\r\n")] = 0;
     int err = parse_cmd(input);
-    if(err){
+    if(err == EXIT_0){
+      return 0;
+    } else if(err) {
       printf("%s: not found\n", input);
     }
   }
