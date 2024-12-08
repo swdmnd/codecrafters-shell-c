@@ -7,8 +7,8 @@ int main() {
     printf("$ ");
     fflush(stdout);
     // Wait for user input
-    char input[100];
-    fgets(input, 100, stdin);
+    char input[MAX_INPUT_BUFFER];
+    fgets(input, MAX_INPUT_BUFFER, stdin);
     input[strcspn(input, "\r\n")] = 0;
     int err = parse_cmd(input);
     if(err == EXIT_0){
