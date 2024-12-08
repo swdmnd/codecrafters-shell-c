@@ -34,7 +34,11 @@ int parse_cmd(char* cmd, FILE* out_stream){
         return 0;
     } else if(!strcmp(cmd_token, "cd")) {
         char cdpath[1024];
-        sprintf(cdpath, "%s", arg);
+        if(arg[0] == '~'){
+            sprintf(cdpath, "%s%s", getenv("HOME"), arg+1);
+        } else {
+            sprintf(cdpath, "%s", arg);
+        }
         int cd_err = chdir(cdpath);
         if(cd_err) {
             printf("cd: %s: No such file or directory\n", arg);
