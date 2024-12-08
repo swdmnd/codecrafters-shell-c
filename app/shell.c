@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <dirent.h>
 #include <string.h>
 #include <stdbool.h>
@@ -6,6 +7,7 @@
 #include "echo.h"
 
 #define ERR_TOKENIZE 0x10
+#define TYPE_EXECUTABLE 0x20
 
 int tokenize_first(char* input, char* output, int* len, int max_length, char* delimiter);
 int is_executable(char* path, char* filename);
@@ -33,31 +35,41 @@ int parse_cmd(char* cmd, FILE* out_stream){
             printf("%s is a shell builtin\n", arg);
             fflush(stdout);
             return 0;
-        } else {
-            char* paths = ENV_PATH;
-            int path_len;
-            char cur_path[256];
-            int dir_err = 0;
-            int file_err = 0;
-            do{
-                dir_err = tokenize_first(paths, cur_path, &path_len, 256, ":");
-                if(dir_err != ERR_TOKENIZE) {
-                    paths = paths + path_len + 1;
-                } else {
-                    strcpy(cur_path, paths);
-                }
-                fflush(stdout);
-                file_err = is_executable(cur_path, arg);
-                if(!file_err) {
-                    printf("%s is %s/%s\n", arg, cur_path, arg);
-                    fflush(stdout);
-                    return 0;
-                }
-            } while(dir_err != ERR_TOKENIZE);
+        } else if (type_err == TYPE_EXECUTABLE) {
+            return 0;
+        } else if (type_err == ERR_INVALID_CMD) {
             printf("%s: not found\n", arg);
             fflush(stdout);
             return 0;
         }
+    } else {
+        char* paths = ENV_PATH;
+        int path_len;
+        char cur_path[256];
+        int dir_err = 0;
+        int file_err = 0;
+        do{
+            dir_err = tokenize_first(paths, cur_path, &path_len, 256, ":");
+            if(dir_err != ERR_TOKENIZE) {
+                paths = paths + path_len + 1;
+            } else {
+                strcpy(cur_path, paths);
+            }
+            fflush(stdout);
+            file_err = is_executable(cur_path, cmd_token);
+            if(!file_err) {
+                if(out_stream == NULL) {
+                    printf("%s is %s/%s\n", cmd_token, cur_path, cmd_token);
+                    fflush(stdout);
+                    return TYPE_EXECUTABLE;
+                }
+                // OVERFLOW!!
+                char execmd[1024];
+                sprintf(execmd, "%s/%s %s", cur_path, cmd_token, arg);
+                system(execmd);
+                return 0;
+            }
+        } while(dir_err != ERR_TOKENIZE);
     }
 
     return ERR_INVALID_CMD;
