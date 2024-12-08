@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>
 #include "shell.h"
 #include "echo.h"
 
@@ -25,6 +26,11 @@ int parse_cmd(char* cmd, FILE* out_stream){
         return EXIT_0;
     } else if(!strcmp(cmd_token, "echo")) {
         echo(arg, out_stream);
+        return 0;
+    } else if(!strcmp(cmd_token, "pwd")) {
+        char workdir[1024];
+        getcwd(workdir, 1024);
+        echo(workdir, out_stream);
         return 0;
     } else if (!strcmp(cmd_token, "type")) {
         if(out_stream == NULL) {
