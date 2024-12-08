@@ -43,6 +43,8 @@ int parse_cmd(char* cmd, FILE* out_stream){
                 dir_err = tokenize_first(paths, cur_path, &path_len, 256, ":");
                 if(dir_err != ERR_TOKENIZE) {
                     paths = paths + path_len + 1;
+                } else {
+                    strcpy(cur_path, paths);
                 }
                 fflush(stdout);
                 file_err = is_executable(cur_path, arg);
