@@ -6,6 +6,6 @@
 #define ERR_INVALID_CMD 0x01
 #define ERR_CMD_LENGTH_LIMIT 0x02
 
-extern int parse_cmd(char* cmd);
+extern int parse_cmd(char* cmd, FILE* out_stream);
 
 #endif

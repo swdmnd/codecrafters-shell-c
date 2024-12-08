@@ -10,7 +10,7 @@ int main() {
     char input[MAX_INPUT_BUFFER];
     fgets(input, MAX_INPUT_BUFFER, stdin);
     input[strcspn(input, "\r\n")] = 0;
-    int err = parse_cmd(input);
+    int err = parse_cmd(input, stdout);
     if(err == EXIT_0){
       return 0;
     } else if(err) {
