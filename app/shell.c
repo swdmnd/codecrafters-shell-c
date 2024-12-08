@@ -25,6 +25,12 @@ int parse_cmd(char* cmd, FILE* out_stream){
     if(!strcmp(cmd_token, "exit")) {
         return EXIT_0;
     } else if(!strcmp(cmd_token, "echo")) {
+        if(arg[strlen(arg)-1] == '\''){
+            arg[strlen(arg)-1] = 0;
+        }
+        if(arg[0] == '\''){
+            ++arg;
+        }
         echo(arg, out_stream);
         return 0;
     } else if(!strcmp(cmd_token, "pwd")) {
