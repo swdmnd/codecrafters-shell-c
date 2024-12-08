@@ -35,7 +35,10 @@ int parse_cmd(char* cmd, FILE* out_stream){
     } else if(!strcmp(cmd_token, "cd")) {
         char cdpath[1024];
         sprintf(cdpath, "%s", arg);
-        chdir(cdpath);
+        int cd_err = chdir(cdpath);
+        if(cd_err) {
+            echo("", out_stream);
+        }
         return 0;
     } else if (!strcmp(cmd_token, "type")) {
         if(out_stream == NULL) {
