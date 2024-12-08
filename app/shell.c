@@ -15,7 +15,7 @@ int parse_cmd(char* cmd, FILE* out_stream){
     int cmd_length = 0;
     int err = tokenize_first(cmd, cmd_token, &cmd_length, MAX_CMD_LENGTH, " ");
     char* arg = cmd+cmd_length+1;
-    if(err) {
+    if(err == ERR_TOKEN_LENGTH_LIMIT) {
         return err;
     }
 
@@ -68,11 +68,14 @@ int tokenize_first(char* input, char* output, int* len, int max_length, char* de
     if(*len >= max_length){
         return ERR_TOKEN_LENGTH_LIMIT;
     }
+
+    memcpy(output, input, *len);
+    output[*len] = 0;
+
     if(*len == strlen(input)) {
         return ERR_TOKENIZE;
     }
-    memcpy(output, input, *len);
-    output[*len] = 0;
+    
     return 0;
 }
 
