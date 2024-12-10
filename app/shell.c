@@ -163,7 +163,9 @@ int tokenize(char* input, Command* cmd) {
                     strcat(cmd->final_cmd," ");
                 }
                 
+                strcat(cmd->final_cmd, "'");
                 strcat(cmd->final_cmd, token);
+                strcat(cmd->final_cmd, "'");
                     
                 token = token + token_ctr + 1;
                 token_ctr = 0;
@@ -180,8 +182,10 @@ int tokenize(char* input, Command* cmd) {
             cmd->argv[argc++] = token;
             strcat(cmd->final_cmd," ");
         }
-
+        
+        strcat(cmd->final_cmd, "'");
         strcat(cmd->final_cmd, token);
+        strcat(cmd->final_cmd, "'");
     }
 
     cmd->argc = argc;
