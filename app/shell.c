@@ -10,60 +10,73 @@
 #define ERR_TOKENIZE 0x10
 #define TYPE_EXECUTABLE 0x20
 
+typedef struct {
+    char* cmd;
+    char* argv[100];
+    int argc;
+    char final_cmd[1000];
+} Command;
+
+Command __command;
+
 int tokenize_first(char* input, char* output, int* len, int max_length, char* delimiter);
+int tokenize(char* input, Command* cmd);
 int is_executable(char* path, char* filename);
 
 int parse_cmd(char* cmd, FILE* out_stream){
-    char cmd_token[MAX_CMD_LENGTH];
-    int cmd_length = 0;
-    int err = tokenize_first(cmd, cmd_token, &cmd_length, MAX_CMD_LENGTH, " ");
-    char* arg = cmd+cmd_length+1;
-    if(err == ERR_TOKEN_LENGTH_LIMIT) {
-        return err;
+    if(strlen(cmd) == 0){
+        return 0;
     }
 
-    if(!strcmp(cmd_token, "exit")) {
+    tokenize(cmd, &__command);
+
+    if(!strcmp(__command.cmd, "exit")) {
         return EXIT_0;
-    } else if(!strcmp(cmd_token, "echo")) {
-        if(arg[strlen(arg)-1] == '\''){
-            arg[strlen(arg)-1] = 0;
+    } else if(!strcmp(__command.cmd, "echo")) {
+        for(int i = 0; i < __command.argc; ++i){
+            printf("%s", __command.argv[i]);
+            if(i != __command.argc - 1){
+                printf(" ");
+            } else {
+                printf("\n");
+            }
+            fflush(stdout);
         }
-        if(arg[0] == '\''){
-            ++arg;
-        }
-        echo(arg, out_stream);
         return 0;
-    } else if(!strcmp(cmd_token, "pwd")) {
+    } else if(!strcmp(__command.cmd, "pwd")) {
         char workdir[1024];
         getcwd(workdir, 1024);
         echo(workdir, out_stream);
         return 0;
-    } else if(!strcmp(cmd_token, "cd")) {
+    } else if(!strcmp(__command.cmd, "cd")) {
         char cdpath[1024];
-        if(arg[0] == '~'){
-            sprintf(cdpath, "%s%s", getenv("HOME"), arg+1);
-        } else {
-            sprintf(cdpath, "%s", arg);
+        if(__command.argc > 0){
+            if(__command.argv[0][0] == '~'){
+                sprintf(cdpath, "%s%s", getenv("HOME"), __command.argv[0]+1);
+            } else {
+                sprintf(cdpath, "%s", __command.argv[0]);
+            }
+            int cd_err = chdir(cdpath);
+            if(cd_err) {
+                printf("cd: %s: No such file or directory\n", __command.argv[0]);
+                fflush(out_stream);
+            }
         }
-        int cd_err = chdir(cdpath);
-        if(cd_err) {
-            printf("cd: %s: No such file or directory\n", arg);
-            fflush(out_stream);
-        }
+        
         return 0;
-    } else if (!strcmp(cmd_token, "type")) {
+    } else if (!strcmp(__command.cmd, "type")) {
         if(out_stream == NULL) {
             return 0;
         }
-        int type_err = parse_cmd(arg, NULL);
+        int type_err = parse_cmd(__command.cmd, NULL);
         if(type_err == EXIT_0 || type_err == 0) {
-            printf("%s is a shell builtin\n", arg);
+            printf("%s is a shell builtin\n", __command.cmd);
             fflush(stdout);
             return 0;
         } else if (type_err == TYPE_EXECUTABLE) {
             return 0;
         } else if (type_err == ERR_INVALID_CMD) {
-            printf("%s: not found\n", arg);
+            printf("%s: not found\n", __command.cmd);
             fflush(stdout);
             return 0;
         }
@@ -81,16 +94,16 @@ int parse_cmd(char* cmd, FILE* out_stream){
                 strcpy(cur_path, paths);
             }
             fflush(stdout);
-            file_err = is_executable(cur_path, cmd_token);
+            file_err = is_executable(cur_path, __command.cmd);
             if(!file_err) {
                 if(out_stream == NULL) {
-                    printf("%s is %s/%s\n", cmd_token, cur_path, cmd_token);
+                    printf("%s is %s/%s\n", __command.cmd, cur_path, __command.cmd);
                     fflush(stdout);
                     return TYPE_EXECUTABLE;
                 }
                 // OVERFLOW!!
-                char execmd[1024];
-                sprintf(execmd, "%s/%s %s", cur_path, cmd_token, arg);
+                char execmd[2048];
+                sprintf(execmd, "%s/%s", cur_path, __command.final_cmd);
                 system(execmd);
                 return 0;
             }
@@ -113,6 +126,65 @@ int tokenize_first(char* input, char* output, int* len, int max_length, char* de
         return ERR_TOKENIZE;
     }
     
+    return 0;
+}
+
+int tokenize(char* input, Command* cmd) {
+    // clear cmd
+    cmd->cmd = NULL;
+    // clear final
+    cmd->final_cmd[0] = '\0';
+    int input_length = strlen(input);
+    char* token = input;
+    int token_ctr = 0;
+    int argc = 0;
+    char encountered_quote = 0;
+    for(int i = 0; i < input_length; ++i){
+        if(encountered_quote == 0 && (input[i] == '\'' || input[i] == '"')) {
+            encountered_quote = input[i];
+            ++token;
+            continue;
+        }
+        if(
+            (encountered_quote == 0 && input[i] == ' ') || 
+            (encountered_quote != 0 && input[i] == encountered_quote)
+          ) {
+                encountered_quote = 0;
+                if(token_ctr == 0){
+                    ++token;
+                    continue;
+                }
+
+                input[i] =  '\0';
+                if(cmd->cmd == NULL) {
+                    cmd->cmd = token;
+                } else {
+                    cmd->argv[argc++] = token;
+                    strcat(cmd->final_cmd," ");
+                }
+                
+                strcat(cmd->final_cmd, token);
+                    
+                token = token + token_ctr + 1;
+                token_ctr = 0;
+                continue;
+        }
+        
+        ++token_ctr;
+    }
+
+    if(token_ctr != 0 && token != 0){
+        if(cmd->cmd == NULL) {
+            cmd->cmd = token;
+        } else {
+            cmd->argv[argc++] = token;
+            strcat(cmd->final_cmd," ");
+        }
+
+        strcat(cmd->final_cmd, token);
+    }
+
+    cmd->argc = argc;
     return 0;
 }
 
