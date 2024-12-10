@@ -65,18 +65,18 @@ int parse_cmd(char* cmd, FILE* out_stream){
         
         return 0;
     } else if (!strcmp(__command.cmd, "type")) {
-        if(out_stream == NULL) {
+        if(out_stream == NULL || __command.argc == 0) {
             return 0;
         }
-        int type_err = parse_cmd(__command.cmd, NULL);
+        int type_err = parse_cmd(__command.argv[0], NULL);
         if(type_err == EXIT_0 || type_err == 0) {
-            printf("%s is a shell builtin\n", __command.cmd);
+            printf("%s is a shell builtin\n", __command.argv[0]);
             fflush(stdout);
             return 0;
         } else if (type_err == TYPE_EXECUTABLE) {
             return 0;
         } else if (type_err == ERR_INVALID_CMD) {
-            printf("%s: not found\n", __command.cmd);
+            printf("%s: not found\n", __command.argv[0]);
             fflush(stdout);
             return 0;
         }
@@ -182,7 +182,7 @@ int tokenize(char* input, Command* cmd) {
             cmd->argv[argc++] = token;
             strcat(cmd->final_cmd," ");
         }
-        
+
         strcat(cmd->final_cmd, "'");
         strcat(cmd->final_cmd, token);
         strcat(cmd->final_cmd, "'");
