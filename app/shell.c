@@ -139,8 +139,17 @@ int tokenize(char* input, Command* cmd) {
     int token_ctr = 0;
     int argc = 0;
     char encountered_quote = 0;
+    bool is_escaping = false;
     char tmp_quote[2] = {0,0};
-    for(int i = 0; i < input_length; ++i){
+    for(int i = 0; i < input_length && input[i] != 0; ++i){
+        if(encountered_quote == 0 && input[i] == '\\') {
+            //shift
+            for(int j = i; input[j] != '\0'; ++j){
+                input[j] = input[j+1];
+            }
+            continue;
+        }
+
         if(encountered_quote == 0 && (input[i] == '\'' || input[i] == '"')) {
             encountered_quote = input[i];
             ++token;
