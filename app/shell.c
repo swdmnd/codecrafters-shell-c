@@ -6,7 +6,6 @@
 #include <unistd.h>
 #include <ctype.h>
 #include "shell.h"
-#include "echo.h"
 
 #define ERR_TOKENIZE 0x10
 #define TYPE_EXECUTABLE 0x20
@@ -22,7 +21,6 @@ Command __command;
 
 char escaped_inside_double_quotes[] = "\\$\"";
 
-int tokenize_first(char* input, char* output, int* len, int max_length, char* delimiter);
 int tokenize(char* input, Command* cmd);
 int is_executable(char* path, char* filename);
 
@@ -49,7 +47,8 @@ int parse_cmd(char* cmd, FILE* out_stream){
     } else if(!strcmp(__command.cmd, "pwd")) {
         char workdir[1024];
         getcwd(workdir, 1024);
-        echo(workdir, out_stream);
+        printf("%s\n", workdir);
+        fflush(out_stream);
         return 0;
     } else if(!strcmp(__command.cmd, "cd")) {
         char cdpath[1024];
@@ -87,16 +86,19 @@ int parse_cmd(char* cmd, FILE* out_stream){
         char* paths = ENV_PATH;
         int path_len;
         char cur_path[256];
-        int dir_err = 0;
+        char* chptr = NULL;
         int file_err = 0;
         do{
-            dir_err = tokenize_first(paths, cur_path, &path_len, 256, ":");
-            if(dir_err != ERR_TOKENIZE) {
-                paths = paths + path_len + 1;
+            chptr = strchr(paths, ':');
+            if(chptr != NULL) {
+                path_len = (chptr - paths);
+                memcpy(cur_path, paths, path_len);
+                cur_path[path_len] = '\0';
+                paths = chptr + 1;
             } else {
                 strcpy(cur_path, paths);
             }
-            fflush(stdout);
+
             file_err = is_executable(cur_path, __command.cmd);
             if(!file_err) {
                 if(out_stream == NULL) {
@@ -110,26 +112,10 @@ int parse_cmd(char* cmd, FILE* out_stream){
                 system(execmd);
                 return 0;
             }
-        } while(dir_err != ERR_TOKENIZE);
+        } while(chptr != NULL);
     }
 
     return ERR_INVALID_CMD;
-}
-
-int tokenize_first(char* input, char* output, int* len, int max_length, char* delimiter){
-    *len = strcspn(input, delimiter);
-    if(*len >= max_length){
-        return ERR_TOKEN_LENGTH_LIMIT;
-    }
-
-    memcpy(output, input, *len);
-    output[*len] = 0;
-
-    if(*len == strlen(input)) {
-        return ERR_TOKENIZE;
-    }
-    
-    return 0;
 }
 
 int tokenize(char* input, Command* cmd) {
