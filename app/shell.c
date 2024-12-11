@@ -47,8 +47,10 @@ int parse_cmd(char* cmd, FILE* out_stream){
     } else if(!strcmp(__command.cmd, "pwd")) {
         char workdir[1024];
         getcwd(workdir, 1024);
-        printf("%s\n", workdir);
-        fflush(out_stream);
+        if(out_stream != NULL){
+            printf("%s\n", workdir);
+            fflush(out_stream);
+        }
         return 0;
     } else if(!strcmp(__command.cmd, "cd")) {
         char cdpath[1024];
