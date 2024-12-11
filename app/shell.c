@@ -20,6 +20,8 @@ typedef struct {
 
 Command __command;
 
+char escaped_inside_double_quotes[] = "\\$\"";
+
 int tokenize_first(char* input, char* output, int* len, int max_length, char* delimiter);
 int tokenize(char* input, Command* cmd);
 int is_executable(char* path, char* filename);
@@ -143,7 +145,8 @@ int tokenize(char* input, Command* cmd) {
     char tmp_quote[2] = {0,0};
     for(int i = 0; i < input_length && input[i] != 0; ++i){
         if(
-            ((encountered_quote == 0 || encountered_quote == '\"') && input[i] == '\\')
+            (encountered_quote == 0 && input[i] == '\\') || 
+            (encountered_quote == '\"' && input[i] == '\\' && strchr(escaped_inside_double_quotes, input[i+1]) != NULL)
         ) {
             //shift
             for(int j = i; input[j] != '\0'; ++j){
