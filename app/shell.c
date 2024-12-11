@@ -20,6 +20,7 @@ typedef struct {
 Command __command;
 
 char escaped_inside_double_quotes[] = "\\$\"";
+char execmd[2048];
 
 int tokenize(char* input, Command* cmd);
 int is_executable(char* path, char* filename);
@@ -108,8 +109,6 @@ int parse_cmd(char* cmd, FILE* out_stream){
                     fflush(stdout);
                     return TYPE_EXECUTABLE;
                 }
-                // OVERFLOW!!
-                char execmd[2048];
                 sprintf(execmd, "%s/%s", cur_path, __command.final_cmd);
                 system(execmd);
                 return 0;
