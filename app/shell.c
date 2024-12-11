@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <ctype.h>
 #include "shell.h"
 #include "echo.h"
 
@@ -132,8 +133,7 @@ int tokenize_first(char* input, char* output, int* len, int max_length, char* de
 int tokenize(char* input, Command* cmd) {
     // clear cmd
     cmd->cmd = NULL;
-    // clear final
-    cmd->final_cmd[0] = '\0';
+    strcpy(cmd->final_cmd, input);
     int input_length = strlen(input);
     char* token = input;
     int token_ctr = 0;
@@ -142,7 +142,9 @@ int tokenize(char* input, Command* cmd) {
     bool is_escaping = false;
     char tmp_quote[2] = {0,0};
     for(int i = 0; i < input_length && input[i] != 0; ++i){
-        if((encountered_quote == 0 || encountered_quote == '\"') && input[i] == '\\') {
+        if(
+            ((encountered_quote == 0 || encountered_quote == '\"') && input[i] == '\\')
+        ) {
             //shift
             for(int j = i; input[j] != '\0'; ++j){
                 input[j] = input[j+1];
@@ -152,15 +154,23 @@ int tokenize(char* input, Command* cmd) {
 
         if(encountered_quote == 0 && (input[i] == '\'' || input[i] == '"')) {
             encountered_quote = input[i];
+            tmp_quote[0] = encountered_quote;
             ++token;
             continue;
         }
+
+        if(input[i] == encountered_quote){
+            encountered_quote = 0;
+            //shift
+            for(int j = i; input[j] != '\0'; ++j){
+                input[j] = input[j+1];
+            }
+            continue;
+        }
+
         if(
-            (encountered_quote == 0 && input[i] == ' ') || 
-            (encountered_quote != 0 && input[i] == encountered_quote)
+            (encountered_quote == 0 && input[i] == ' ')
           ) {
-                tmp_quote[0] = encountered_quote;
-                encountered_quote = 0;
                 if(token_ctr == 0){
                     ++token;
                     continue;
@@ -171,12 +181,7 @@ int tokenize(char* input, Command* cmd) {
                     cmd->cmd = token;
                 } else {
                     cmd->argv[argc++] = token;
-                    strcat(cmd->final_cmd," ");
                 }
-                
-                strcat(cmd->final_cmd, tmp_quote);
-                strcat(cmd->final_cmd, token);
-                strcat(cmd->final_cmd, tmp_quote);
                     
                 token = token + token_ctr + 1;
                 token_ctr = 0;
@@ -191,17 +196,7 @@ int tokenize(char* input, Command* cmd) {
             cmd->cmd = token;
         } else {
             cmd->argv[argc++] = token;
-            strcat(cmd->final_cmd," ");
         }
-
-        if(tmp_quote[0] != 0){
-            strcat(cmd->final_cmd, tmp_quote);
-            strcat(cmd->final_cmd, token);
-            strcat(cmd->final_cmd, tmp_quote);
-        } else {
-            strcat(cmd->final_cmd, token);
-        }
-        
     }
 
     cmd->argc = argc;
